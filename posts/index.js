@@ -1,34 +1,45 @@
-const express=require('express');// to create a new app
-const bodyParser=require('body-parser'); // some json data send by user in a body request actually gets passed  
-const {randomBytes} =require('crypto'); //to create random id 
-const cors =require('cors');// uses as a middleware inorder to rectify the localhost port
+const express = require('express');
+const bodyParser = require('body-parser');
+const { randomBytes } = require('crypto');
+const cors = require('cors');
+const axios = require('axios');
 
-const app=express();
-
-const posts={}; // store every post we create
+const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
+const posts = {};
 
-//retreice all post create
-app.get('/posts',(req,res)=>{
-res.send(posts);
+app.get('/posts', (req, res) => {
+  res.send(posts);
 });
 
+app.post('/posts', async (req, res) => {
+  const id = randomBytes(4).toString('hex');
+  const { title } = req.body;
 
-//for new post
-app.post('/posts',(req,res)=>{
-    const id =randomBytes(4).toString('hex');
-    const { title } = req.body;
+  posts[id] = {
+    id,
+    title
+  };
 
-    posts[id]={
-        id,title
-    };
+  await axios.post('http://localhost:4005/events', {
+    type: 'PostCreated',
+    data: {
+      id,
+      title
+    }
+  });
 
-    res.status(201).send(posts[id]);
+  res.status(201).send(posts[id]);
 });
 
+app.post('/events', (req, res) => {
+  console.log('Received Event', req.body.type);
 
-app.listen(4000,()=>{
-    console.log('Listening on 4000');
+  res.send({});
+});
+
+app.listen(4000, () => {
+  console.log('Listening on 4000');
 });
